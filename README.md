@@ -1,10 +1,10 @@
 <div align="center">
 
-# ✈️ TripMate AI
+# ✈️ TripPilot AI
 
 ### A multi-agent travel planner powered by LangGraph and the Model Context Protocol (MCP)
 
-Describe your trip in plain English and get flight options, hotel ideas, weather insights and a day-by-day itinerary, all in one place. TripMate AI extends [TripPilot AI](https://travel-planner-gww0.onrender.com) by moving its tool integrations onto **MCP**, so each data source is a swappable, standards-based tool server instead of a hard-wired API call.
+Describe your trip in plain English and get flight options, hotel ideas, weather insights and a day-by-day itinerary, all in one place. TripPilot AI extends [TripPilot AI](https://travel-planner-gww0.onrender.com) by moving its tool integrations onto **MCP**, so each data source is a swappable, standards-based tool server instead of a hard-wired API call.
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
@@ -19,13 +19,13 @@ Describe your trip in plain English and get flight options, hotel ideas, weather
 
 ## Overview
 
-Planning a trip usually means juggling flight sites, hotel listings, weather apps and spreadsheets. **TripMate AI** replaces that with one prompt. Five specialised agents, coordinated by a LangGraph workflow, research each part of the trip through MCP tool servers and merge the results into a single, readable plan.
+Planning a trip usually means juggling flight sites, hotel listings, weather apps and spreadsheets. **TripPilot AI** replaces that with one prompt. Five specialised agents, coordinated by a LangGraph workflow, research each part of the trip through MCP tool servers and merge the results into a single, readable plan.
 
 > **Example prompt:** *Plan a 5-day Bali trip from Hyderabad including flights, hotels, weather and sightseeing under 1.5 lakhs.*
 
 ## Why MCP?
 
-TripPilot AI called each API directly from agent code. TripMate AI wraps every external capability behind the Model Context Protocol, which gives you:
+TripPilot AI called each API directly from agent code. TripPilot AI wraps every external capability behind the Model Context Protocol, which gives you:
 
 - **Decoupled tools:** agents talk to a uniform tool interface, not vendor SDKs.
 - **Mixed transports:** remote HTTP and local stdio servers live side by side.
@@ -211,7 +211,7 @@ Contributions are welcome.
 
 ## Related Project
 
-TripMate AI is the MCP-based extension of **TripPilot AI**, which used direct API integrations. See the original at https://travel-planner-gww0.onrender.com.
+TripPilot AI is the MCP-based extension of **TripPilot AI**, which used direct API integrations. See the original at https://travel-planner-gww0.onrender.com.
 
 ## Acknowledgments
 
