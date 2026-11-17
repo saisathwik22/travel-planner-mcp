@@ -25,8 +25,8 @@ from langchain_core.messages import (
 )
 from langchain_groq import ChatGroq
 # from tools.tavily_tool import tavily_search
-from tools.flight_tool import search_flights
-from mcp_client_test import tavily_mcp_search
+# from tools.flight_tool import search_flights
+from mcp_client import tavily_mcp_search, aviation_mcp_call
 
 
 def get_database_url():
@@ -50,7 +50,11 @@ if not GROQ_API_KEY:
     raise ValueError("GROQ_API_KEY is missing. Please add it to your .env file.")
 
 
-# LLM
+
+
+# ==================
+# LLM - GROQ
+# ==================
 
 llm = ChatGroq(
     model="openai/gpt-oss-120b",
@@ -68,22 +72,112 @@ class TravelState(TypedDict):
 
 
 
+
+
+# =======================
 # Flight Agent
+# =======================
+
+# def flight_agent(state: TravelState):
+#     query = state["user_query"]
+#     flight_data = search_flights(query)
+
+#     return {
+#         "flight_results": flight_data,
+#         "messages": [
+#             AIMessage(content="Flight results fetched.")
+#         ],
+#         "llm_calls": state.get("llm_calls", 0) + 1
+#     }
+
+
+
+# Flight Tool Router Prompt
+FLIGHT_AGENT_PROMPT = """
+    
+    You are a travel flight expert
+
+    User Query:
+    {query}
+
+    Airport Information:
+    {airport_data}
+
+    Airline Information:
+    {airline_data}
+
+    Generate:
+
+    1. Likely departure airport
+    2. Likely arrival airport
+    3. Airlines serving this route
+    4. Typical flight duration
+    5. Estimated airfare range
+    6. Peak season pricing warning
+    7. Booking advice
+    
+    Return concise travel guidance.
+
+"""
+
 
 def flight_agent(state: TravelState):
+    print("\nINSIDE FLIGHT AGENT\n")
+
     query = state["user_query"]
-    flight_data = search_flights(query)
+
+    try:
+
+        airports = asyncio.run(
+            aviation_mcp_call(
+                "list_airports"
+            )
+        )
+
+        airlines = asyncio.run(
+            aviation_mcp_call(
+                "list_airlines"
+            )
+        )
+
+        print("\nAIRPORTS:", airports)
+        print("\nAIRLINES:", airlines)
+
+        prompt = FLIGHT_AGENT_PROMPT.format(
+            query=query,
+            airport_data=str(airports)[:3000],
+            airline_data=str(airlines)[:3000]
+        )
+
+        response = llm.invoke([
+            SystemMessage(
+                content="You are an expert travel flight planner."
+            ),
+            HumanMessage(content=prompt)
+        ])
+
+        flight_data = response.content
+
+    except Exception as e:
+        flight_data = f"Flight information unavailable: {str(e)}"
 
     return {
         "flight_results": flight_data,
         "messages": [
-            AIMessage(content="Flight results fetched.")
+            AIMessage(
+                content="Flight recommendatons generated"
+            )
         ],
         "llm_calls": state.get("llm_calls", 0) + 1
     }
 
+# 1:04:00
 
+
+
+# ======================
 # Hotel Agent
+# ======================
 
 def hotel_agent(state: TravelState):
     query = f"Best hotels for {state['user_query']}"
@@ -98,7 +192,14 @@ def hotel_agent(state: TravelState):
         "llm_calls": state.get("llm_calls", 0) + 1
     }
 
+
+
+
+
+# =========================
 # Itinerary Agent
+# =========================
+
 
 def itinerary_agent(state: TravelState):
     prompt = f"""
@@ -127,9 +228,19 @@ def itinerary_agent(state: TravelState):
         "llm_calls": state.get("llm_calls", 0) + 1
     }
 
+
+
+
+
+
+
+# =============================
 # Final Response Agent
+# =============================
 
 def final_agent(state: TravelState):
+
+    
     final_prompt = f"""
         Generate the final travel response for the user.
 
@@ -137,13 +248,13 @@ def final_agent(state: TravelState):
         {state['user_query']}
 
         Flights:
-        {state['flight_results']}
+         {str(state['flight_results'])[:1800]}
 
         Hotels:
-        {state['hotel_results']}
+        {str(state['hotel_results'])[:1800]}
 
         Itinerary:
-        {state['itinerary']}
+        {str(state['itinerary'])[:1800]}
 
         Format the final answer beautifully using these sections:
 
@@ -171,7 +282,12 @@ def final_agent(state: TravelState):
     }
 
 
+
+
+
+# ======================
 # GRAPH
+# ======================
 
 graph = StateGraph(TravelState)
 
@@ -187,7 +303,11 @@ graph.add_edge("itinerary_agent", "final_agent")
 graph.add_edge("final_agent", END)
 
 
+
+
+# ============================
 # PostgreSQL Checkpoint
+# ============================
 
 DATABASE_URL = get_database_url()
 
@@ -203,7 +323,12 @@ checkpointer.setup()
 
 travel_graph = graph.compile(checkpointer=checkpointer)
 
+
+
+
+# =============================
 # Function for FastAPI
+# =============================
 
 def run_travel_agent(user_input: str, thread_id: str | None = None):
     if not thread_id:
